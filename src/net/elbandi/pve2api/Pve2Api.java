@@ -84,7 +84,7 @@ public class Pve2Api {
 		RestClient client = new RestClient("https://" + this.pve_hostname
 				+ ":8006/api2/json" + Path);
 		client.addHeader("Cookie", "CSRFPreventionToken=" + pve_login_token);
-		client.addHeader("Cookie", "PVEAuthCookie_=" + pve_login_ticket);
+		client.addHeader("Cookie", "PVEAuthCookie=" + pve_login_ticket);
 		if (data != null)
 			for (Map.Entry<String, String> entry : data.entrySet()) {
 				client.addParam(entry.getKey(), entry.getValue());
