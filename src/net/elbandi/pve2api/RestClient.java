@@ -59,28 +59,35 @@ public class RestClient {
 	// HTTP Basic Authentication
 	private String username;
 	private String password;
+
 	public enum RequestMethod {
 		DELETE, GET, POST, PUT
 	}
-    public static final String SYS_PROP_SOCKS_PROXY_HOST = "socksProxyHost"; 
-    public static final String SYS_PROP_SOCKS_PROXY_PORT = "socksProxyPort"; 
+
+	public static final String SYS_PROP_SOCKS_PROXY_HOST = "socksProxyHost";
+	public static final String SYS_PROP_SOCKS_PROXY_PORT = "socksProxyPort";
+
 	public RestClient(String url) {
 		this.url = url;
 		try {
-			SSLSocketFactory sslsf = new SSLSocketFactory(new TrustSelfSignedStrategy(), new AllowAllHostnameVerifier());
+			SSLSocketFactory sslsf = new SSLSocketFactory(new TrustSelfSignedStrategy(),
+					new AllowAllHostnameVerifier());
 			Scheme https = new Scheme("https", 8006, sslsf);
 			client.getConnectionManager().getSchemeRegistry().register(https);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		//HttpHost proxy = new HttpHost("192.168.1.1", 8081);
-		//client.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxy);
-		//System.setProperty(SYS_PROP_SOCKS_PROXY_HOST, "192.168.1.1"); 
-        //System.setProperty(SYS_PROP_SOCKS_PROXY_PORT, ""+1234); 
+		// HttpHost proxy = new HttpHost("192.168.1.1", 8081);
+		// client.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY,
+		// proxy);
+		// System.setProperty(SYS_PROP_SOCKS_PROXY_HOST, "192.168.1.1");
+		// System.setProperty(SYS_PROP_SOCKS_PROXY_PORT, ""+1234);
 		params = new ArrayList<NameValuePair>();
 		headers = new ArrayList<NameValuePair>();
 	}
-	//Be warned that this is sent in clear text, don't use basic auth unless you have to.
+
+	// Be warned that this is sent in clear text, don't use basic auth unless
+	// you have to.
 	public void addBasicAuthentication(String user, String pass) {
 		authentication = true;
 		username = user;
@@ -103,8 +110,7 @@ public class RestClient {
 		params.clear();
 	}
 
-	public void execute(RequestMethod method)
-	    throws Exception {
+	public void execute(RequestMethod method) throws Exception {
 		switch (method) {
 			case GET: {
 				HttpGet request = new HttpGet(url + addGetParams());
@@ -134,51 +140,42 @@ public class RestClient {
 		}
 	}
 
-	private HttpUriRequest addHeaderParams(HttpUriRequest request)
-			throws Exception {
+	private HttpUriRequest addHeaderParams(HttpUriRequest request) throws Exception {
 		for (NameValuePair h : headers) {
 			request.addHeader(h.getName(), h.getValue());
 		}
 
 		if (authentication) {
-			UsernamePasswordCredentials creds = new UsernamePasswordCredentials(
-					username, password);
+			UsernamePasswordCredentials creds = new UsernamePasswordCredentials(username, password);
 			request.addHeader(new BasicScheme().authenticate(creds, request));
 		}
 
 		return request;
 	}
 
-	private HttpUriRequest addBodyParams(HttpUriRequest request)
-			throws Exception {
+	private HttpUriRequest addBodyParams(HttpUriRequest request) throws Exception {
 		if (jsonBody != null) {
 			request.addHeader("Content-Type", "application/json");
 			if (request instanceof HttpPost)
-				((HttpPost) request).setEntity(new StringEntity(jsonBody,
-						"UTF-8"));
+				((HttpPost) request).setEntity(new StringEntity(jsonBody, "UTF-8"));
 			else if (request instanceof HttpPut)
-				((HttpPut) request).setEntity(new StringEntity(jsonBody,
-						"UTF-8"));
+				((HttpPut) request).setEntity(new StringEntity(jsonBody, "UTF-8"));
 
 		} else if (!params.isEmpty()) {
 			if (request instanceof HttpPost)
-				((HttpPost) request).setEntity(new UrlEncodedFormEntity(params,
-						HTTP.UTF_8));
+				((HttpPost) request).setEntity(new UrlEncodedFormEntity(params, HTTP.UTF_8));
 			else if (request instanceof HttpPut)
-				((HttpPut) request).setEntity(new UrlEncodedFormEntity(params,
-						HTTP.UTF_8));
+				((HttpPut) request).setEntity(new UrlEncodedFormEntity(params, HTTP.UTF_8));
 		}
 		return request;
 	}
 
-	private String addGetParams()
-	    throws Exception {
+	private String addGetParams() throws Exception {
 		StringBuffer combinedParams = new StringBuffer();
 		if (!params.isEmpty()) {
 			combinedParams.append("?");
 			for (NameValuePair p : params) {
-				combinedParams.append((combinedParams.length() > 1 ? "&" : "")
-						+ p.getName() + "="
+				combinedParams.append((combinedParams.length() > 1 ? "&" : "") + p.getName() + "="
 						+ URLEncoder.encode(p.getValue(), "UTF-8"));
 			}
 		}
@@ -257,57 +254,4 @@ public class RestClient {
 		}
 		return sb.toString();
 	}
-	
-	
-	static class MySchemeSocketFactory implements SchemeSocketFactory {
-
-        public Socket createSocket(final HttpParams params) throws IOException {
-            if (params == null) {
-                throw new IllegalArgumentException("HTTP parameters may not be null");
-            }
-            String proxyHost = (String) params.getParameter("socks.host");
-            Integer proxyPort = (Integer) params.getParameter("socks.port");
-
-            InetSocketAddress socksaddr = new InetSocketAddress(proxyHost, proxyPort);
-            Proxy proxy = new Proxy(Proxy.Type.SOCKS, socksaddr);
-            return new Socket(proxy);
-        }
-
-        public Socket connectSocket(
-                final Socket socket,
-                final InetSocketAddress remoteAddress,
-                final InetSocketAddress localAddress,
-                final HttpParams params)
-                    throws IOException, UnknownHostException, ConnectTimeoutException {
-            if (remoteAddress == null) {
-                throw new IllegalArgumentException("Remote address may not be null");
-            }
-            if (params == null) {
-                throw new IllegalArgumentException("HTTP parameters may not be null");
-            }
-            Socket sock;
-            if (socket != null) {
-                sock = socket;
-            } else {
-                sock = createSocket(params);
-            }
-            if (localAddress != null) {
-                sock.setReuseAddress(HttpConnectionParams.getSoReuseaddr(params));
-                sock.bind(localAddress);
-            }
-            int timeout = HttpConnectionParams.getConnectionTimeout(params);
-            try {
-                sock.connect(remoteAddress, timeout);
-            } catch (SocketTimeoutException ex) {
-                throw new ConnectTimeoutException("Connect to " + remoteAddress.getHostName() + "/"
-                        + remoteAddress.getAddress() + " timed out");
-            }
-            return sock;
-        }
-
-        public boolean isSecure(final Socket sock) throws IllegalArgumentException {
-            return false;
-        }
-
-    }
 }

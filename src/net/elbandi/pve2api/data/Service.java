@@ -8,7 +8,7 @@ public class Service {
 	private String name;
 	private String service;
 	private String state;
-	
+
 	public Service(JSONObject data) throws JSONException {
 		desc = data.getString("desc");
 		name = data.getString("name");

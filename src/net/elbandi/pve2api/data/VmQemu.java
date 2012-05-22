@@ -54,8 +54,8 @@ public class VmQemu {
 		name = data.getString("name");
 		netin = data.getLong("netin");
 		netout = data.getLong("netout");
-		pid = !data.getString("pid").equals("null") ? (Integer) JSONObject
-				.stringToValue(data.getString("pid")) : 0;
+		pid = !data.getString("pid").equals("null") ? (Integer) JSONObject.stringToValue(data
+				.getString("pid")) : 0;
 		status = data.getString("status");
 		uptime = data.getInt("uptime");
 	}

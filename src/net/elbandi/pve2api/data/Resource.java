@@ -42,8 +42,9 @@ public class Resource {
 
 	public static List<Resource> getResourcesByType(List<Resource> src, Type type) {
 		List<Resource> res = new ArrayList<Resource>();
-		for(Resource r : src){
-			if (r.type == type) res.add(r);
+		for (Resource r : src) {
+			if (r.type == type)
+				res.add(r);
 		}
 		return res;
 	}
