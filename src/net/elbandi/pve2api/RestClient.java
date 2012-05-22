@@ -4,10 +4,16 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.net.URLEncoder;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 
 import org.apache.http.HttpEntity;
+//import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -19,7 +25,11 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.conn.ConnectTimeoutException;
+//import org.apache.http.conn.params.ConnRoutePNames;
 import org.apache.http.conn.scheme.Scheme;
+import org.apache.http.conn.scheme.SchemeSocketFactory;
+import org.apache.http.conn.ssl.AllowAllHostnameVerifier;
 import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.entity.StringEntity;
@@ -52,16 +62,21 @@ public class RestClient {
 	public enum RequestMethod {
 		DELETE, GET, POST, PUT
 	}
-
+    public static final String SYS_PROP_SOCKS_PROXY_HOST = "socksProxyHost"; 
+    public static final String SYS_PROP_SOCKS_PROXY_PORT = "socksProxyPort"; 
 	public RestClient(String url) {
 		this.url = url;
 		try {
-			SSLSocketFactory sslsf = new SSLSocketFactory(new TrustSelfSignedStrategy());
+			SSLSocketFactory sslsf = new SSLSocketFactory(new TrustSelfSignedStrategy(), new AllowAllHostnameVerifier());
 			Scheme https = new Scheme("https", 8006, sslsf);
 			client.getConnectionManager().getSchemeRegistry().register(https);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		//HttpHost proxy = new HttpHost("192.168.1.1", 8081);
+		//client.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxy);
+		//System.setProperty(SYS_PROP_SOCKS_PROXY_HOST, "192.168.1.1"); 
+        //System.setProperty(SYS_PROP_SOCKS_PROXY_PORT, ""+1234); 
 		params = new ArrayList<NameValuePair>();
 		headers = new ArrayList<NameValuePair>();
 	}
@@ -242,4 +257,57 @@ public class RestClient {
 		}
 		return sb.toString();
 	}
+	
+	
+	static class MySchemeSocketFactory implements SchemeSocketFactory {
+
+        public Socket createSocket(final HttpParams params) throws IOException {
+            if (params == null) {
+                throw new IllegalArgumentException("HTTP parameters may not be null");
+            }
+            String proxyHost = (String) params.getParameter("socks.host");
+            Integer proxyPort = (Integer) params.getParameter("socks.port");
+
+            InetSocketAddress socksaddr = new InetSocketAddress(proxyHost, proxyPort);
+            Proxy proxy = new Proxy(Proxy.Type.SOCKS, socksaddr);
+            return new Socket(proxy);
+        }
+
+        public Socket connectSocket(
+                final Socket socket,
+                final InetSocketAddress remoteAddress,
+                final InetSocketAddress localAddress,
+                final HttpParams params)
+                    throws IOException, UnknownHostException, ConnectTimeoutException {
+            if (remoteAddress == null) {
+                throw new IllegalArgumentException("Remote address may not be null");
+            }
+            if (params == null) {
+                throw new IllegalArgumentException("HTTP parameters may not be null");
+            }
+            Socket sock;
+            if (socket != null) {
+                sock = socket;
+            } else {
+                sock = createSocket(params);
+            }
+            if (localAddress != null) {
+                sock.setReuseAddress(HttpConnectionParams.getSoReuseaddr(params));
+                sock.bind(localAddress);
+            }
+            int timeout = HttpConnectionParams.getConnectionTimeout(params);
+            try {
+                sock.connect(remoteAddress, timeout);
+            } catch (SocketTimeoutException ex) {
+                throw new ConnectTimeoutException("Connect to " + remoteAddress.getHostName() + "/"
+                        + remoteAddress.getAddress() + " timed out");
+            }
+            return sock;
+        }
+
+        public boolean isSecure(final Socket sock) throws IllegalArgumentException {
+            return false;
+        }
+
+    }
 }
