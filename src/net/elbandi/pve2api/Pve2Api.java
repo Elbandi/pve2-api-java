@@ -103,6 +103,9 @@ public class Pve2Api {
 			return new JSONObject(client.getResponse());
 		} else if (client.getResponseCode() == HttpURLConnection.HTTP_UNAUTHORIZED) {
 			throw new LoginException(client.getErrorMessage());
+		} else if (client.getResponseCode() == HttpURLConnection.HTTP_BAD_REQUEST) {
+			// TODO: find a better exception
+			throw new IOException(client.getErrorMessage());
 		} else {
 			throw new IOException(client.getErrorMessage());
 			// error connecting to server, lets just return an error
@@ -244,6 +247,20 @@ public class Pve2Api {
 			res.add(Storage.createStorage(data2.getJSONObject(i)));
 		}
 		return res;
+	}
+
+	public void createStorage(Storage storage) throws LoginException, JSONException, IOException {
+		Map<String, String> data = storage.getCreateParams();
+		pve_action("/storage", RestClient.RequestMethod.POST, data);
+	}
+
+	public void updateStorage(Storage storage) throws LoginException, JSONException, IOException {
+		Map<String, String> data = storage.getUpdateParams();
+		pve_action("/storage/" + storage.getStorage(), RestClient.RequestMethod.PUT, data);
+	}
+
+	public void deleteStorage(String storage) throws LoginException, JSONException, IOException {
+		pve_action("/storage/" + storage, RestClient.RequestMethod.DELETE, null);
 	}
 
 	public List<VmQemu> getQemuVMs(String node) throws JSONException, LoginException, IOException {
@@ -586,23 +603,24 @@ public class Pve2Api {
 	}
 
 	// TODO: refactor to use BasicNameValuePair
-	class PveParams extends HashMap<String, String> {
+	public static class PveParams extends HashMap<String, String> {
 		private static final long serialVersionUID = 1L;
 
 		public PveParams(String key, String value) {
-			put(key, value);
+			Add(key, value);
 		}
 
 		public PveParams(String key, int value) {
-			put(key, "" + value);
+			Add(key, value);
 		}
 
 		public PveParams(String key, boolean value) {
-			put(key, value ? "true" : "false");
+			Add(key, value);
 		}
 
 		public PveParams Add(String key, String value) {
-			put(key, value);
+			if (value != null)
+				put(key, value);
 			return this;
 		}
 
@@ -612,7 +630,7 @@ public class Pve2Api {
 		}
 
 		public PveParams Add(String key, boolean value) {
-			put(key, value ? "true" : "false");
+			put(key, value ? "1" : "0");
 			return this;
 		}
 	}
