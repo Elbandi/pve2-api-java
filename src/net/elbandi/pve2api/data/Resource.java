@@ -6,8 +6,6 @@ import java.util.List;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import net.elbandi.pve2api.data.resource.*;
-
 public class Resource {
 	private String id;
 	private Type type;
@@ -28,13 +26,13 @@ public class Resource {
 	public static Resource createResource(JSONObject data) throws JSONException {
 		switch (convertType(data.getString("type"))) {
 		case Pool:
-			return new Pool(data);
+			return new net.elbandi.pve2api.data.resource.Pool(data);
 		case VmQemu:
-			return new Vm(data);
+			return new net.elbandi.pve2api.data.resource.Vm(data);
 		case Node:
 			return new net.elbandi.pve2api.data.resource.Node(data);
 		case Storage:
-			return new Storage(data);
+			return new net.elbandi.pve2api.data.resource.Storage(data);
 		default:
 			return new Resource(data);
 		}

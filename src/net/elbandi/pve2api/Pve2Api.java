@@ -16,6 +16,7 @@ import net.elbandi.pve2api.data.Network;
 import net.elbandi.pve2api.data.Node;
 import net.elbandi.pve2api.data.Resource;
 import net.elbandi.pve2api.data.Service;
+import net.elbandi.pve2api.data.Storage;
 import net.elbandi.pve2api.data.Task;
 import net.elbandi.pve2api.data.VmOpenvz;
 import net.elbandi.pve2api.data.VmQemu;
@@ -233,6 +234,16 @@ public class Pve2Api {
 		JSONObject jObj = pve_action("/nodes/" + node + "/vncshell", RestClient.RequestMethod.POST,
 				null);
 		return new VncData(jObj.getJSONObject("data"));
+	}
+
+	public List<Storage> getStorages() throws JSONException, LoginException, IOException {
+		List<Storage> res = new ArrayList<Storage>();
+		JSONObject jObj = pve_action("/storage", RestClient.RequestMethod.GET, null);
+		JSONArray data2 = jObj.getJSONArray("data");
+		for (int i = 0; i < data2.length(); i++) {
+			res.add(Storage.createStorage(data2.getJSONObject(i)));
+		}
+		return res;
 	}
 
 	public List<VmQemu> getQemuVMs(String node) throws JSONException, LoginException, IOException {
