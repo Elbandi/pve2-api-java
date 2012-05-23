@@ -10,12 +10,16 @@ import java.util.Map;
 
 import javax.security.auth.login.LoginException;
 
+import net.elbandi.pve2api.data.AplInfo;
+import net.elbandi.pve2api.data.ClusterLog;
 import net.elbandi.pve2api.data.Network;
 import net.elbandi.pve2api.data.Node;
 import net.elbandi.pve2api.data.Resource;
 import net.elbandi.pve2api.data.Service;
+import net.elbandi.pve2api.data.Task;
 import net.elbandi.pve2api.data.VmOpenvz;
 import net.elbandi.pve2api.data.VmQemu;
+import net.elbandi.pve2api.data.VncData;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -105,17 +109,39 @@ public class Pve2Api {
 	}
 
 	// TODO cluster adatok
+	public List<ClusterLog> getClusterLog() throws JSONException, LoginException, IOException {
+		List<ClusterLog> res = new ArrayList<ClusterLog>();
+		JSONObject jObj = pve_action("/cluster/log", RestClient.RequestMethod.GET, null);
+		JSONArray data2 = jObj.getJSONArray("data");
+		for (int i = 0; i < data2.length(); i++) {
+			res.add(new ClusterLog(data2.getJSONObject(i)));
+		}
+		return res;
+	}
 
 	public List<Resource> getResources() throws JSONException, LoginException, IOException {
 		List<Resource> res = new ArrayList<Resource>();
 		JSONObject jObj = pve_action("/cluster/resources", RestClient.RequestMethod.GET, null);
-		JSONArray data2;
-		data2 = jObj.getJSONArray("data");
+		JSONArray data2 = jObj.getJSONArray("data");
 		for (int i = 0; i < data2.length(); i++) {
 			res.add(Resource.createResource(data2.getJSONObject(i)));
 		}
 		return res;
 	}
+
+	public List<Task> getTasks() throws JSONException, LoginException, IOException {
+		List<Task> res = new ArrayList<Task>();
+		JSONObject jObj = pve_action("/cluster/tasks", RestClient.RequestMethod.GET, null);
+		JSONArray data2 = jObj.getJSONArray("data");
+		for (int i = 0; i < data2.length(); i++) {
+			res.add(new Task(data2.getJSONObject(i)));
+		}
+		return res;
+	}
+
+	// TODO: getOptions
+	// TODO: setOptions
+	// TODO: getClusterStatus
 
 	public List<String> getNodeList() throws JSONException, LoginException, IOException {
 		List<String> res = new ArrayList<String>();
@@ -148,6 +174,37 @@ public class Pve2Api {
 		return res;
 	}
 
+	public List<AplInfo> getNodeAppliances(String node) throws JSONException, LoginException,
+			IOException {
+		List<AplInfo> res = new ArrayList<AplInfo>();
+		JSONObject jObj = pve_action("/nodes/" + node + "/aplinfo", RestClient.RequestMethod.GET,
+				null);
+		JSONArray data2 = jObj.getJSONArray("data");
+		for (int i = 0; i < data2.length(); i++) {
+			res.add(new AplInfo(data2.getJSONObject(i)));
+		}
+		return res;
+	}
+
+	public String downloadAppliances(String node, String storage, String template)
+			throws LoginException, JSONException, IOException {
+		JSONObject jObj = pve_action("/nodes/" + node + "/aplinfo", RestClient.RequestMethod.POST,
+				new PveParams("storage", storage).Add("template", template));
+		return jObj.getString("data");
+	}
+
+	public String startNodeVMs(String node) throws LoginException, JSONException, IOException {
+		JSONObject jObj = pve_action("/nodes/" + node + "/startall", RestClient.RequestMethod.POST,
+				null);
+		return jObj.getString("data");
+	}
+
+	public String stopNodeVMs(String node) throws LoginException, JSONException, IOException {
+		JSONObject jObj = pve_action("/nodes/" + node + "/stopall", RestClient.RequestMethod.POST,
+				null);
+		return jObj.getString("data");
+	}
+
 	public List<String> getNodeSyslog(String name) throws JSONException, LoginException,
 			IOException {
 		List<String> res = new ArrayList<String>();
@@ -172,7 +229,11 @@ public class Pve2Api {
 		return res;
 	}
 
-	// node commands!!!
+	public VncData shellNode(String node) throws LoginException, JSONException, IOException {
+		JSONObject jObj = pve_action("/nodes/" + node + "/vncshell", RestClient.RequestMethod.POST,
+				null);
+		return new VncData(jObj.getJSONObject("data"));
+	}
 
 	public List<VmQemu> getQemuVMs(String node) throws JSONException, LoginException, IOException {
 		List<VmQemu> res = new ArrayList<VmQemu>();
@@ -308,19 +369,11 @@ public class Pve2Api {
 						forceStop));
 	}
 
-	public void consoleQemu(String node, int vmid) throws LoginException, JSONException,
+	public VncData consoleQemu(String node, int vmid) throws LoginException, JSONException,
 			IOException {
 		JSONObject jObj = pve_action("/nodes/" + node + "/qemu/" + vmid + "/vncproxy",
 				RestClient.RequestMethod.POST, null);
-		JSONObject data2 = jObj.getJSONObject("data");
-		data2.toString();
-		/*
-		 * "cert" :
-		 * "-----BEGIN CERTIFICATE-----\nblablbalba\n-----END CERTIFICATE-----\n"
-		 * , "port" : 5900, "ticket" : "PVEVNC:4FBBC95A::blablabla", "upid" :
-		 * "UPID:prox1:00000000:00000000:00000000:vncproxy:134:root@pam:",
-		 * "user" : "root@pam"
-		 */
+		return new VncData(jObj.getJSONObject("data"));
 	}
 
 	public String suspendQemu(String node, int vmid) throws LoginException, JSONException,
@@ -439,13 +492,11 @@ public class Pve2Api {
 		return jObj.getString("data");
 	}
 
-	public void consoleOpenvz(String node, int vmid) throws LoginException, JSONException,
+	public VncData consoleOpenvz(String node, int vmid) throws LoginException, JSONException,
 			IOException {
 		JSONObject jObj = pve_action("/nodes/" + node + "/openvz/" + vmid + "/vncproxy",
 				RestClient.RequestMethod.POST, null);
-		JSONObject data2 = jObj.getJSONObject("data");
-		data2.toString();
-		// TODO: same result as consoleQemu
+		return new VncData(jObj.getJSONObject("data"));
 	}
 
 	// TODO: status/ubc, ???
