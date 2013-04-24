@@ -79,13 +79,12 @@ public class Pve2Api {
 		}
 	}
 
-	private JSONObject pve_action(String Path, RestClient.RequestMethod method,
-			Map<String, String> data) throws JSONException, LoginException, IOException {
+	private JSONObject pve_action(String Path, RestClient.RequestMethod method, Map<String, String> data) throws JSONException, LoginException, IOException 
+	{
 		pve_check_login_ticket();
 		if (!Path.startsWith("/"))
 			Path = "/".concat(Path);
-		RestClient client = new RestClient("https://" + this.pve_hostname + ":8006/api2/json"
-				+ Path);
+		RestClient client = new RestClient("https://" + this.pve_hostname + ":8006/api2/json" + Path);
 		if (!method.equals(RestClient.RequestMethod.GET))
 			client.addHeader("CSRFPreventionToken", pve_login_token);
 		client.addHeader("Cookie", "PVEAuthCookie=" + pve_login_ticket);
@@ -480,9 +479,26 @@ public class Pve2Api {
 				RestClient.RequestMethod.GET, null);
 		vm.SetConfig(jObj.getJSONObject("data"));
 	}
-
-	// TODO: createOpenvz
-	// TODO: updateOpenvz
+	
+	
+	public String createOpenvz(VmOpenvz vm) throws LoginException, JSONException, IOException 
+	{
+		return createOpenvz(vm.getNode(), vm);
+	}
+	
+	public String createOpenvz(String node, VmOpenvz vm) throws LoginException, JSONException, IOException 
+	{
+		Map<String, String> parameterData = vm.getCreateParams();
+		System.out.println(parameterData.toString());
+		String path = "/nodes/" + node + "/openvz";
+		JSONObject jsonObject = pve_action(path, RestClient.RequestMethod.POST, parameterData);
+		return jsonObject.getString("data");
+	}
+	
+	public String updateOpenvz(String node, VmOpenvz vm) throws LoginException, JSONException, IOException 
+	{
+		return createOpenvz(node, vm);
+	}
 
 	protected Map<Integer, String> initlogOpenvz(String node, int vmid, Map<String, String> data)
 			throws LoginException, JSONException, IOException {

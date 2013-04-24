@@ -1,5 +1,8 @@
 package net.elbandi.pve2api.data;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -20,23 +23,32 @@ public class VmOpenvz {
 	private String status;
 	private long swap;
 	private int uptime;
-
 	private int cpuunits;
 	private String digest;
 	private int diskspace; // ! name collision
 	private int memory;
 	private String hostname;
 	private String nameserver;
-	// TODO: make it object!
-	private String netif;
+	private String netif; // TODO: make netif it object!
 	private boolean onboot;
 	private String ostemplate;
 	private int quotatime;
 	private int quotaugidlimit;
 	private String searchdomain;
 	private String storage;
+	private String password;
+	private int vmid;
+	private String node;
 
-	public VmOpenvz(JSONObject data) throws JSONException {
+	public VmOpenvz()
+	{
+		setStandardSettings();
+	}
+	
+	public VmOpenvz(JSONObject data) throws JSONException 
+	{
+		setStandardSettings();
+		
 		cpu = (float) data.getDouble("cpu");
 		cpus = data.getInt("cpus");
 		disk = (float) data.getDouble("disk");
@@ -54,6 +66,42 @@ public class VmOpenvz {
 		swap = data.getLong("swap");
 		uptime = data.getInt("uptime");
 	}
+	
+	private void setStandardSettings()
+	{
+		cpu = 0;
+		cpus = 0;
+		disk = 0;
+		diskread = 0;
+		diskwrite = 0;
+		maxdisk = 0;
+		maxmem = 0;
+		maxswap = 0;
+		mem = 0;
+		name = "";
+		netin = 0;
+		netout = 0;
+		nproc = 0;
+		status = "";
+		swap = 0;
+		uptime = 0;
+		cpuunits = 0;
+		digest = "";
+		diskspace = 0;
+		memory = 0;
+		hostname = "";
+		nameserver = "";
+		netif = "";
+		onboot = false;
+		ostemplate = "";
+		quotatime = 0;
+		quotaugidlimit = 0;
+		searchdomain = "";
+		storage = "";
+		password = "";
+		vmid = 0;
+		node = "";
+	}
 
 	public void SetConfig(JSONObject data) throws JSONException {
 		cpuunits = data.optInt("cpuunits", 1000);
@@ -70,7 +118,46 @@ public class VmOpenvz {
 		searchdomain = data.getString("searchdomain");
 		storage = data.getString("storage");
 	}
+	
+	public Map<String, String> getCreateParams()
+	{
+		Map<String, String> parameters = new HashMap<String, String>();
 
+		parameters.put("ostemplate", this.ostemplate);
+		parameters.put("vmid", Integer.toString(this.vmid));
+		
+		if(this.cpus > 0)
+			parameters.put("cpus", Integer.toString(this.cpus));
+		if(this.cpuunits > 0)
+			parameters.put("cpuunits", Integer.toString(this.cpuunits));
+		if(this.disk > 0)
+			parameters.put("disk", Float.toString(this.disk));
+		if(this.hostname != null && this.hostname.length() > 0)
+			parameters.put("hostname", this.hostname);
+		if(this.memory > 0)
+			parameters.put("memory", Integer.toString(this.memory));
+		if(this.nameserver != null && this.nameserver.length() > 0)
+			parameters.put("nameserver", this.nameserver);
+		if(this.netif != null && this.netif.length() > 0)
+			parameters.put("netif", this.netif);
+		if(this.password != null && this.password.length() > 0)
+			parameters.put("password", this.password);
+		if(this.quotatime > 0)
+			parameters.put("quotatime", Integer.toString(this.quotatime));
+		if(this.quotaugidlimit > 0)
+			parameters.put("quotaugidlimit", Integer.toString(this.quotaugidlimit));
+		if(this.searchdomain != null && this.searchdomain.length() > 0)
+			parameters.put("searchdomain", this.searchdomain);
+		if(this.storage != null && this.storage.length() > 0)
+			parameters.put("storage", this.storage);
+		if(this.swap > 0)
+			parameters.put("swap", Long.toString(this.swap));
+		
+		return parameters;
+	}
+
+	/* getter */
+	
 	public float getCpu() {
 		return cpu;
 	}
@@ -185,5 +272,27 @@ public class VmOpenvz {
 
 	public String getStorage() {
 		return storage;
+	}
+	
+	public String getNode()
+	{
+		return this.node;
+	}
+	
+	/* setter */
+	
+	public void setOstemplate(String ostemplate)
+	{
+		this.ostemplate = ostemplate;
+	}
+	
+	public void setVmid(int vmid)
+	{
+		this.vmid = vmid;
+	}
+	
+	public void setNode(String node)
+	{
+		this.node = node;
 	}
 }
